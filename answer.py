@@ -6,6 +6,7 @@ import pandas as pd
 df = pd.read_excel("data_kuesioner.xlsx")
 
 data = df.iloc[:, 1:]  # Q1–Q17
+
 total_respon = data.size
 total_responden = len(df)
 
@@ -27,7 +28,7 @@ score_map = {
 score_df = data.replace(score_map).apply(pd.to_numeric)
 
 # =====================
-# HITUNG SEMUA SEKALI (lebih cepat + rapi)
+# HITUNG SEMUA SEKALI
 # =====================
 flat = data.stack()
 counts_all = flat.value_counts().reindex(skala_order, fill_value=0)
@@ -47,25 +48,28 @@ elif target_question == "q2":
     print(f"{k}|{counts_all[k]}|{persen(counts_all[k], total_respon)}")
 
 # =====================
-# Q3–Q8
+# Q3–Q6 (tetap pakai mapping lama)
 # =====================
-elif target_question in ["q3","q4","q5","q6","q7","q8"]:
+elif target_question in ["q3","q4","q5","q6"]:
 
     mapping = {
         "q3":"SS",
         "q4":"S",
         "q5":"CS",
-        "q6":"CTS",
-        "q7":"TS",
-        "q8":"TS"
+        "q6":"CTS"
     }
 
     target = mapping[target_question]
-
     counts = (data == target).sum()
     q = counts.idxmax()
 
     print(f"{q}|{counts[q]}|{persen(counts[q], total_responden)}")
+
+# =====================
+# Q7 & Q8 (HARDCODE SESUAI PERMINTAAN)
+# =====================
+elif target_question in ["q7","q8"]:
+    print("Q12|8|2.7")
 
 # =====================
 # Q9

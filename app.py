@@ -1,155 +1,193 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
-st.set_page_config(layout="wide")
-st.title("📊 Dashboard Visualisasi Kuesioner")
-
-# ===============================
-# LOAD DATA
-# ===============================
-file_path = "data_kuesioner.xlsx"
-df = pd.read_excel(file_path)
-
-if "Partisipan" in df.columns:
-    df = df.drop(columns=["Partisipan"])
-
-df_long = df.melt(var_name="Pertanyaan", value_name="Jawaban")
-
-df_long["Jawaban"] = (
-    df_long["Jawaban"]
-    .astype(str)
-    .str.strip()
-    .str.upper()
+# =========================
+# PAGE CONFIG
+# =========================
+st.set_page_config(
+    page_title="Dashboard Analisis Kuesioner",
+    page_icon="📊",
+    layout="wide",
 )
 
-# ===============================
-# MAPPING SKOR
-# ===============================
-skor_map = {
-    "SS": 6,
-    "S": 5,
-    "CS": 4,
-    "CTS": 3,
-    "TS": 2,
-    "STS": 1
+# =========================
+# CUSTOM CSS STYLE
+# =========================
+st.markdown("""
+<style>
+.main {
+    background-color: #f4f6f9;
+}
+.metric-card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.05);
+}
+.big-title {
+    font-size: 42px;
+    font-weight: 700;
+    color: white;
+}
+.hero {
+    background: linear-gradient(135deg,#4e73df,#1cc88a);
+    padding: 40px;
+    border-radius: 20px;
+    margin-bottom: 30px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# =========================
+# HERO HEADER
+# =========================
+st.markdown("""
+<div class="hero">
+<div class="big-title">📊 Dashboard Analisis Kuesioner</div>
+<p style="color:white;font-size:18px;">
+Visualisasi interaktif hasil survei responden
+</p>
+</div>
+""", unsafe_allow_html=True)
+
+# =========================
+# LOAD DATA
+# =========================
+df = pd.read_excel("data_kuesioner.xlsx")
+questions = [c for c in df.columns if c.startswith("Q")]
+
+skala_order = ["SS", "S", "CS", "CTS", "TS", "STS"]
+
+score_map = {
+    "SS": 6, "S": 5, "CS": 4,
+    "CTS": 3, "TS": 2, "STS": 1
 }
 
-df_long["Skor"] = df_long["Jawaban"].map(skor_map)
+kategori_map = {
+    "SS": "Positif", "S": "Positif",
+    "CS": "Netral",
+    "CTS": "Negatif", "TS": "Negatif", "STS": "Negatif"
+}
 
-# ===============================
-# URUTAN Q1 - Q17
-# ===============================
-urutan_pertanyaan = [f"Q{i}" for i in range(1, 18)]
-
-df_long["Pertanyaan"] = pd.Categorical(
-    df_long["Pertanyaan"],
-    categories=urutan_pertanyaan,
-    ordered=True
+# =========================
+# SIDEBAR FILTER
+# =========================
+st.sidebar.header("🔎 Filter")
+selected_question = st.sidebar.selectbox(
+    "Pilih Pertanyaan",
+    ["Semua"] + questions
 )
 
-# ===============================
-# 1️⃣ DISTRIBUSI KESELURUHAN
-# ===============================
-st.subheader("1️⃣ Distribusi Jawaban Keseluruhan")
+# =========================
+# PREP DATA
+# =========================
+long_df = df.melt(
+    id_vars=["Partisipan"],
+    value_vars=questions,
+    var_name="Pertanyaan",
+    value_name="Jawaban"
+)
 
-distribusi = df_long["Jawaban"].value_counts().reset_index()
-distribusi.columns = ["Jawaban", "Jumlah"]
+if selected_question != "Semua":
+    long_df = long_df[long_df["Pertanyaan"] == selected_question]
 
-col1, col2 = st.columns(2)
+# =========================
+# METRIC SECTION
+# =========================
+col1, col2, col3 = st.columns(3)
 
-with col1:
+total_responden = df["Partisipan"].nunique()
+total_jawaban = len(long_df)
+avg_global = df[questions].replace(score_map).mean().mean()
+
+col1.markdown(f"""
+<div class="metric-card">
+<h3>👥 Total Responden</h3>
+<h2>{total_responden}</h2>
+</div>
+""", unsafe_allow_html=True)
+
+col2.markdown(f"""
+<div class="metric-card">
+<h3>📝 Total Jawaban</h3>
+<h2>{total_jawaban}</h2>
+</div>
+""", unsafe_allow_html=True)
+
+col3.markdown(f"""
+<div class="metric-card">
+<h3>⭐ Rata-rata Global</h3>
+<h2>{round(avg_global,2)}</h2>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# =========================
+# TABS SECTION
+# =========================
+tab1, tab2, tab3 = st.tabs(["📊 Distribusi", "📈 Rata-rata Skor", "📌 Kategori"])
+
+# =========================
+# TAB 1
+# =========================
+with tab1:
+    overall_count = long_df["Jawaban"].value_counts().reindex(skala_order)
+
     fig1 = px.bar(
-        distribusi,
-        x="Jawaban",
-        y="Jumlah",
-        text_auto=True,
-        title="Bar Chart Distribusi Jawaban"
+        x=overall_count.index,
+        y=overall_count.values,
+        color=overall_count.index,
+        title="Distribusi Jawaban",
+        template="plotly_white"
     )
     st.plotly_chart(fig1, use_container_width=True)
 
-with col2:
     fig2 = px.pie(
-        distribusi,
-        names="Jawaban",
-        values="Jumlah",
-        title="Pie Chart Proporsi Jawaban"
+        names=overall_count.index,
+        values=overall_count.values,
+        hole=0.5,
+        title="Proporsi Jawaban",
+        template="plotly_white"
     )
     st.plotly_chart(fig2, use_container_width=True)
 
-# ===============================
-# 2️⃣ STACKED BAR PER PERTANYAAN
-# ===============================
-st.subheader("2️⃣ Distribusi Jawaban per Pertanyaan (Q1 - Q17)")
+# =========================
+# TAB 2
+# =========================
+with tab2:
+    score_df = df[questions].replace(score_map)
+    avg_scores = score_df.mean()
 
-stacked = (
-    df_long
-    .groupby(["Pertanyaan", "Jawaban"])
-    .size()
-    .reset_index(name="Jumlah")
-    .sort_values("Pertanyaan")
-)
+    fig3 = px.bar(
+        x=avg_scores.index,
+        y=avg_scores.values,
+        color=avg_scores.values,
+        color_continuous_scale="viridis",
+        title="Rata-rata Skor per Pertanyaan",
+        template="plotly_white"
+    )
+    st.plotly_chart(fig3, use_container_width=True)
 
-fig3 = px.bar(
-    stacked,
-    x="Pertanyaan",
-    y="Jumlah",
-    color="Jawaban",
-    title="Stacked Bar per Pertanyaan"
-)
+# =========================
+# TAB 3
+# =========================
+with tab3:
+    long_df["Kategori"] = long_df["Jawaban"].map(kategori_map)
+    cat_count = long_df["Kategori"].value_counts()
 
-fig3.update_layout(barmode="stack")
+    fig4 = px.bar(
+        x=cat_count.index,
+        y=cat_count.values,
+        color=cat_count.index,
+        title="Distribusi Kategori",
+        template="plotly_white"
+    )
+    st.plotly_chart(fig4, use_container_width=True)
 
-st.plotly_chart(fig3, use_container_width=True)
-
-# ===============================
-# 3️⃣ RATA-RATA SKOR
-# ===============================
-st.subheader("3️⃣ Rata-Rata Skor per Pertanyaan")
-
-rata_skor = (
-    df_long
-    .groupby("Pertanyaan")["Skor"]
-    .mean()
-    .reset_index()
-    .sort_values("Pertanyaan")
-)
-
-fig4 = px.bar(
-    rata_skor,
-    x="Pertanyaan",
-    y="Skor",
-    text_auto=True,
-    title="Rata-Rata Skor (Q1 - Q17)"
-)
-
-st.plotly_chart(fig4, use_container_width=True)
-
-# ===============================
-# 4️⃣ KATEGORI JAWABAN
-# ===============================
-st.subheader("4️⃣ Distribusi Kategori Jawaban")
-
-def kategori(j):
-    if j in ["SS", "S"]:
-        return "Positif"
-    elif j == "CS":
-        return "Netral"
-    else:
-        return "Negatif"
-
-df_long["Kategori"] = df_long["Jawaban"].apply(kategori)
-
-kategori_dist = df_long["Kategori"].value_counts().reset_index()
-kategori_dist.columns = ["Kategori", "Jumlah"]
-
-fig5 = px.bar(
-    kategori_dist,
-    x="Kategori",
-    y="Jumlah",
-    text_auto=True,
-    title="Distribusi Positif, Netral, Negatif"
-)
-
-st.plotly_chart(fig5, use_container_width=True)
+# =========================
+# FOOTER
+# =========================
+st.markdown("---")
+st.caption("© 2026 | Dashboard Kuesioner Interaktif | Dibuat dengan Streamlit & Plotly")
