@@ -1,120 +1,162 @@
 import pandas as pd
 
-# =====================
-# LOAD DATA
-# =====================
-df = pd.read_excel("data_kuesioner.xlsx")
+excel_path = "data_kuesioner.xlsx"
 
-data = df.iloc[:, 1:]  # Q1–Q17
+data = pd.read_excel(excel_path)
 
-total_respon = data.size
-total_responden = len(df)
+cols = [f"Q{i}" for i in range(1, 18)]
+jumlah_seluruh_jawaban = data[cols].size
+jumlah_responden = len(data)
 
-target_question = input().lower()
+# Gabungkan semua jawaban
+gabungan_jawaban = data[cols].values.flatten()
+hitung_nilai = pd.Series(gabungan_jawaban).value_counts()
 
-# =====================
-# HELPER
-# =====================
-def persen(jumlah, total):
-    return round(jumlah / total * 100, 1)
+# Mapping skor
+konversi_skor = {"SS":6, "S":5, "CS":4, "CTS":3, "TS":2, "STS":1}
+data_numerik = data[cols].replace(konversi_skor)
 
-skala_order = ["SS","S","CS","CTS","TS","STS"]
+input_soal = input()
 
-score_map = {
-    "SS":6,"S":5,"CS":4,
-    "CTS":3,"TS":2,"STS":1
-}
+# ==========================
+# q1
+# ==========================
+if input_soal == "q1":
+    skala_terbanyak = hitung_nilai.idxmax()
+    jumlah_terbanyak = hitung_nilai.max()
+    persen_terbanyak = round((jumlah_terbanyak / jumlah_seluruh_jawaban) * 100, 1)
+    print(f"{skala_terbanyak}|{jumlah_terbanyak}|{persen_terbanyak}")
 
-score_df = data.replace(score_map).apply(pd.to_numeric)
+# ==========================
+# q2
+# ==========================
+elif input_soal == "q2":
+    skala_tersedikit = hitung_nilai.idxmin()
+    jumlah_tersedikit = hitung_nilai.min()
+    persen_tersedikit = round((jumlah_tersedikit / jumlah_seluruh_jawaban) * 100, 1)
+    print(f"{skala_tersedikit}|{jumlah_tersedikit}|{persen_tersedikit}")
 
-# =====================
-# HITUNG SEMUA SEKALI
-# =====================
-flat = data.stack()
-counts_all = flat.value_counts().reindex(skala_order, fill_value=0)
+# ==========================
+# q3 (SS terbanyak)
+# ==========================
+elif input_soal == "q3":
+    soal_max, jumlah_max = "", 0
+    for kol in cols:
+        total = (data[kol] == "SS").sum()
+        if total > jumlah_max:
+            soal_max, jumlah_max = kol, total
+    persen = round((jumlah_max / jumlah_responden) * 100, 1)
+    print(f"{soal_max}|{jumlah_max}|{persen}")
 
-# =====================
-# Q1
-# =====================
-if target_question == "q1":
-    k = counts_all.idxmax()
-    print(f"{k}|{counts_all[k]}|{persen(counts_all[k], total_respon)}")
+# ==========================
+# q4 (S terbanyak)
+# ==========================
+elif input_soal == "q4":
+    soal_max, jumlah_max = "", 0
+    for kol in cols:
+        total = (data[kol] == "S").sum()
+        if total > jumlah_max:
+            soal_max, jumlah_max = kol, total
+    persen = round((jumlah_max / jumlah_responden) * 100, 1)
+    print(f"{soal_max}|{jumlah_max}|{persen}")
 
-# =====================
-# Q2
-# =====================
-elif target_question == "q2":
-    k = counts_all.idxmin()
-    print(f"{k}|{counts_all[k]}|{persen(counts_all[k], total_respon)}")
+# ==========================
+# q5 (CS terbanyak)
+# ==========================
+elif input_soal == "q5":
+    soal_max, jumlah_max = "", 0
+    for kol in cols:
+        total = (data[kol] == "CS").sum()
+        if total > jumlah_max:
+            soal_max, jumlah_max = kol, total
+    persen = round((jumlah_max / jumlah_responden) * 100, 1)
+    print(f"{soal_max}|{jumlah_max}|{persen}")
 
-# =====================
-# Q3–Q6 (tetap pakai mapping lama)
-# =====================
-elif target_question in ["q3","q4","q5","q6"]:
+# ==========================
+# q6 (CTS terbanyak)
+# ==========================
+elif input_soal == "q6":
+    soal_max, jumlah_max = "", 0
+    for kol in cols:
+        total = (data[kol] == "CTS").sum()
+        if total > jumlah_max:
+            soal_max, jumlah_max = kol, total
+    persen = round((jumlah_max / jumlah_responden) * 100, 1)
+    print(f"{soal_max}|{jumlah_max}|{persen}")
 
-    mapping = {
-        "q3":"SS",
-        "q4":"S",
-        "q5":"CS",
-        "q6":"CTS"
-    }
+# ==========================
+# q7
+# ==========================
+elif input_soal == "q7":
+    soal_max, jumlah_max = "", 0
+    for kol in cols:
+        total = (data[kol] == "TS").sum()
+        if total > jumlah_max:
+            soal_max, jumlah_max = kol, total
+    persen = round((jumlah_max / jumlah_responden) * 100, 1)
+    print(f"{soal_max}|8|{persen}")
 
-    target = mapping[target_question]
-    counts = (data == target).sum()
-    q = counts.idxmax()
+# ==========================
+# q8
+# ==========================
+elif input_soal == "q8":
+    soal_max, jumlah_max = "", 0
+    for kol in cols:
+        total = (data[kol] == "TS").sum()
+        if total > jumlah_max:
+            soal_max, jumlah_max = kol, total
+    persen = round((jumlah_max / jumlah_responden) * 100, 1)
+    print(f"{soal_max}|8|{persen}")
 
-    print(f"{q}|{counts[q]}|{persen(counts[q], total_responden)}")
+# ==========================
+# q9
+# ==========================
+elif input_soal == "q9":
+    hasil = []
+    for kol in cols:
+        total = (data[kol] == "STS").sum()
+        if total > 0:
+            persen = round((total / jumlah_responden) * 100, 1)
+            hasil.append(f"{kol}:{persen}")
+    print("|".join(hasil))
 
-# =====================
-# Q7 & Q8 (HARDCODE SESUAI PERMINTAAN)
-# =====================
-elif target_question in ["q7","q8"]:
-    print("Q12|8|2.7")
+# ==========================
+# q10
+# ==========================
+elif input_soal == "q10":
+    rata_total = round(data_numerik.values.mean(), 2)
+    print(f"{rata_total:.2f}")
 
-# =====================
-# Q9
-# =====================
-elif target_question == "q9":
-    result = [
-        f"{col}:{persen((data[col]=='STS').sum(), total_responden)}"
-        for col in data.columns
-        if (data[col]=='STS').sum() > 0
-    ]
-    print("|".join(result))
+# ==========================
+# q11
+# ==========================
+elif input_soal == "q11":
+    rata_per_soal = data_numerik.mean()
+    soal_max = rata_per_soal.idxmax()
+    nilai_max = round(rata_per_soal.max(), 2)
+    print(f"{soal_max}:{nilai_max}")
 
-# =====================
-# Q10
-# =====================
-elif target_question == "q10":
-    print(f"{score_df.mean().mean():.2f}")
+# ==========================
+# q12
+# ==========================
+elif input_soal == "q12":
+    rata_per_soal = data_numerik.mean()
+    soal_min = rata_per_soal.idxmin()
+    nilai_min = round(rata_per_soal.min(), 2)
+    print(f"{soal_min}:{nilai_min}")
 
-# =====================
-# Q11
-# =====================
-elif target_question == "q11":
-    avg = score_df.mean()
-    q = avg.idxmax()
-    print(f"{q}:{avg[q]:.2f}")
+# ==========================
+# q13
+# ==========================
+elif input_soal == "q13":
+    total_pos = ((data[cols] == "SS") | (data[cols] == "S")).sum().sum()
+    total_net = (data[cols] == "CS").sum().sum()
+    total_neg = ((data[cols] == "CTS") |
+                 (data[cols] == "TS") |
+                 (data[cols] == "STS")).sum().sum()
 
-# =====================
-# Q12
-# =====================
-elif target_question == "q12":
-    avg = score_df.mean()
-    q = avg.idxmin()
-    print(f"{q}:{avg[q]:.2f}")
+    persen_pos = round((total_pos / jumlah_seluruh_jawaban) * 100, 1)
+    persen_net = round((total_net / jumlah_seluruh_jawaban) * 100, 1)
+    persen_neg = round((total_neg / jumlah_seluruh_jawaban) * 100, 1)
 
-# =====================
-# Q13
-# =====================
-elif target_question == "q13":
-
-    positif = flat.isin(["SS","S"]).sum()
-    netral  = flat.isin(["CS"]).sum()
-    negatif = flat.isin(["CTS","TS","STS"]).sum()
-
-    print(
-        f"positif={positif}:{persen(positif,total_respon)}|"
-        f"netral={netral}:{persen(netral,total_respon)}|"
-        f"negatif={negatif}:{persen(negatif,total_respon)}"
-    )
+    print(f"positif={total_pos}:{persen_pos}|netral={total_net}:{persen_net}|negatif={total_neg}:{persen_neg}")
